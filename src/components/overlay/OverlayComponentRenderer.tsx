@@ -19,42 +19,56 @@ export const OverlayComponentRenderer: React.FC<Props> = ({ component, theme }) 
 };
 
 const ComponentContent: React.FC<Props> = ({ component, theme }) => {
-  switch (component.type) {
-    case 'marquee':
-      return (
-        <MarqueeTicker 
-          text={component.props.text}
-          speed={component.props.speed}
-          separator={component.props.separator}
-          fontFamily={component.props.fontFamily}
-          width={component.width} 
-          height={component.height} 
-          theme={theme} 
-        />
-      );
-    case 'journal':
-      return (
-        <WeeklyJournalCard 
-          data={component.props.data}
-          heading={component.props.heading}
-          subHeading={component.props.subHeading}
-          showTotal={component.props.showTotal}
-          fontFamily={component.props.fontFamily}
-          width={component.width} 
-          height={component.height} 
-          theme={theme} 
-        />
-      );
-    case 'media':
-      return (
-        <MediaComponent 
-           src={component.props.src}
-           objectFit={component.props.objectFit}
-           width={component.width}
-           height={component.height}
-        />
-      );
-    default:
-      return null;
+  if (component.type === 'marquee') {
+    return (
+      <MarqueeTicker 
+        key={theme.id}
+        text={component.props.text}
+        speed={component.props.speed}
+        separator={component.props.separator}
+        fontFamily={component.props.fontFamily}
+        width={component.width} 
+        height={component.height} 
+        duration={component.duration}
+        onscreenDuration={component.onscreenDuration}
+        offscreenDuration={component.offscreenDuration}
+        loop={component.loop}
+        theme={theme} 
+      />
+    );
   }
+  
+  if (component.type === 'journal') {
+    return (
+      <WeeklyJournalCard 
+        key={theme.id}
+        data={component.props.data}
+        heading={component.props.heading}
+        subHeading={component.props.subHeading}
+        showTotal={component.props.showTotal}
+        fontFamily={component.props.fontFamily}
+        width={component.width} 
+        height={component.height} 
+        duration={component.duration}
+        onscreenDuration={component.onscreenDuration}
+        offscreenDuration={component.offscreenDuration}
+        loop={component.loop}
+        theme={theme} 
+      />
+    );
+  }
+  
+  if (component.type === 'media') {
+    return (
+      <MediaComponent 
+         key={theme.id}
+         src={component.props.src}
+         objectFit={component.props.objectFit}
+         width={component.width}
+         height={component.height}
+      />
+    );
+  }
+  
+  return null;
 };

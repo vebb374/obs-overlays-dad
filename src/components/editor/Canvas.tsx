@@ -20,6 +20,7 @@ export const Canvas: React.FC = () => {
     selectComponent: state.selectComponent,
     selectedComponentId: state.selectedComponentId,
     getActiveTheme: state.getActiveTheme,
+    activeThemeId: state.activeThemeId, // Subscribe to theme changes
     canvasWidth: state.canvasWidth,
     canvasHeight: state.canvasHeight
   })));
@@ -64,16 +65,17 @@ export const Canvas: React.FC = () => {
 
   // Handle auto-scaling
   useLayoutEffect(() => {
+    const handleResize = () => {
+        if (autoFit) fitToScreen();
+    };
+
     if (autoFit) {
         fitToScreen();
     }
     
-    const handleResize = () => {
-        if (autoFit) fitToScreen();
-    };
-    
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canvasWidth, canvasHeight, autoFit]);
 
   const handleZoomIn = () => {

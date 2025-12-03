@@ -28,17 +28,20 @@ export const EditorLayout: React.FC = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    try {
-      await importConfig(file);
-      showToast('Configuration imported successfully');
-    } catch (err) {
-      showToast('Failed to import configuration');
-      console.error(err);
-    }
+    void (async () => {
+      try {
+        await importConfig(file);
+        showToast('Configuration imported successfully');
+      } catch (err) {
+        showToast('Failed to import configuration');
+        console.error(err);
+      }
+    })();
+    
     // Reset input
     e.target.value = '';
   };
@@ -48,21 +51,23 @@ export const EditorLayout: React.FC = () => {
     e.dataTransfer.dropEffect = 'copy';
   };
 
-  const handleDrop = async (e: React.DragEvent) => {
+  const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const files = Array.from(e.dataTransfer.files);
     
     // If dropped a JSON file, try to import config
     const jsonFile = files.find(f => f.name.endsWith('.json'));
     if (jsonFile) {
-       try {
-         await importConfig(jsonFile);
-         showToast('Configuration imported from dropped file');
-         return;
-       } catch (err) {
-         // If import fails, continue to check for media
-         console.error(err);
-       }
+       void (async () => {
+         try {
+           await importConfig(jsonFile);
+           showToast('Configuration imported from dropped file');
+         } catch (err) {
+           // If import fails, continue to check for media
+           console.error(err);
+         }
+       })();
+       return;
     }
 
     // Handle media files

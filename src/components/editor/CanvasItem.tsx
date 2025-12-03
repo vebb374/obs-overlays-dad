@@ -28,10 +28,10 @@ export const CanvasItem = memo(({
       size={{ width: component.width, height: component.height }}
       position={{ x: component.x, y: component.y }}
       style={{ zIndex: component.zIndex }}
-      onDragStop={(_e: any, d: any) => {
+      onDragStop={(_e, d) => {
         onUpdate(component.id, { x: d.x, y: d.y });
       }}
-      onResizeStop={(_e: any, _direction: any, ref: HTMLElement, _delta: any, position: { x: number; y: number }) => {
+      onResizeStop={(_e, _direction, ref, _delta, position) => {
         onUpdate(component.id, {
           width: parseInt(ref.style.width),
           height: parseInt(ref.style.height),
@@ -78,4 +78,6 @@ export const CanvasItem = memo(({
     prev.theme === next.theme
   );
 });
+
+CanvasItem.displayName = 'CanvasItem';
 

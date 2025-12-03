@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Theme } from '../../state/useOverlayStore';
 import { cn } from '../../utils/cn';
@@ -17,6 +17,10 @@ interface WeeklyJournalCardProps {
   width: number;
   height: number;
   fontFamily?: string;
+  duration?: number;
+  onscreenDuration?: number;
+  offscreenDuration?: number;
+  loop?: boolean;
 }
 
 export const WeeklyJournalCard: React.FC<WeeklyJournalCardProps> = ({
@@ -27,7 +31,11 @@ export const WeeklyJournalCard: React.FC<WeeklyJournalCardProps> = ({
   theme,
   width,
   height,
-  fontFamily
+  fontFamily,
+  duration,
+  onscreenDuration,
+  offscreenDuration,
+  loop = true
 }) => {
   const total = data.reduce((acc, curr) => acc + curr.profit, 0);
 
@@ -35,7 +43,40 @@ export const WeeklyJournalCard: React.FC<WeeklyJournalCardProps> = ({
     return val > 0 ? `+${val}` : `${val}`;
   };
 
-  const containerVariants = {
+  // Visibility State Logic
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+
+    if (isVisible) {
+      // If we have an onscreenDuration, use it. Otherwise, we might just stay visible forever unless loop is handled externally,
+      // but for consistency with marquee, let's respect onscreenDuration if present.
+      // If not present, and loop is true, maybe we don't hide? 
+      // The user asked for "onscreen offscreen timer for weekly journal too", so we assume they want it to hide.
+      
+      if (onscreenDuration) {
+          timer = setTimeout(() => {
+             setIsVisible(false);
+          }, onscreenDuration);
+      } 
+      // If no onscreenDuration is set, we just stay visible (default behavior)
+      
+    } else {
+      // Hidden state
+      if (loop) {
+        const waitDuration = offscreenDuration ?? 5000; // Default 5s wait
+        timer = setTimeout(() => {
+          setIsVisible(true);
+        }, waitDuration);
+      }
+    }
+
+    return () => clearTimeout(timer);
+  }, [isVisible, loop, onscreenDuration, offscreenDuration]);
+
+
+  const defaultContainerVariants = {
     hidden: { opacity: 0, scale: 0.95 },
     visible: {
       opacity: 1,
@@ -43,7 +84,7 @@ export const WeeklyJournalCard: React.FC<WeeklyJournalCardProps> = ({
       transition: {
         staggerChildren: 0.1,
         delayChildren: 0.1,
-        duration: 0.3
+        duration: (duration ? duration / 1000 : 0.3)
       }
     },
     exit: {
@@ -57,15 +98,18 @@ export const WeeklyJournalCard: React.FC<WeeklyJournalCardProps> = ({
     }
   };
 
-  const itemVariants = {
+  const defaultItemVariants = {
     hidden: { x: -20, opacity: 0 },
     visible: { 
       x: 0, 
       opacity: 1,
-      transition: { type: "spring", stiffness: 300, damping: 24 }
+      transition: { type: "spring" as const, stiffness: 300, damping: 24 }
     },
     exit: { x: -20, opacity: 0, transition: { duration: 0.2 } }
   };
+
+  const containerVariants = theme.animations?.journal?.container ?? defaultContainerVariants;
+  const itemVariants = theme.animations?.journal?.item ?? defaultItemVariants;
 
   const headerVariants = {
     hidden: { y: -20, opacity: 0 },
@@ -73,8 +117,9 @@ export const WeeklyJournalCard: React.FC<WeeklyJournalCardProps> = ({
   };
 
   return (
+    <AnimatePresence mode="wait">
+     {isVisible && (
     <motion.div
-      layout
       initial="hidden"
       animate="visible"
       exit="exit"
@@ -191,5 +236,7 @@ export const WeeklyJournalCard: React.FC<WeeklyJournalCardProps> = ({
         )}
       </div>
     </motion.div>
+     )}
+    </AnimatePresence>
   );
 };

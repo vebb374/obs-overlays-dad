@@ -1,6 +1,8 @@
-import React, { useRef, useEffect } from 'react';
-import { useOverlayStore, DEFAULT_THEMES } from '../../state/useOverlayStore';
-import { Trash2, Link, MoveUp, MoveDown, ArrowUpToLine, ArrowDownToLine, Upload } from 'lucide-react';
+import React, { useRef, useEffect, useState } from 'react';
+import { useOverlayStore } from '../../state/useOverlayStore';
+import type { OverlayComponent } from '../../state/useOverlayStore';
+import { getAllThemes } from '../../themes';
+import { Trash2, Link, MoveUp, MoveDown, ArrowUpToLine, ArrowDownToLine, Upload, Search } from 'lucide-react';
 
 export const Inspector: React.FC = () => {
   const { 
@@ -18,6 +20,7 @@ export const Inspector: React.FC = () => {
   
   const selectedComponent = components.find(c => c.id === selectedComponentId);
   const mediaInputRef = useRef<HTMLInputElement>(null);
+  const [themeSearch, setThemeSearch] = useState('');
   
   // Global Delete key handler
   useEffect(() => {
@@ -36,15 +39,48 @@ export const Inspector: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedComponentId, removeComponent]);
 
-  const handlePropChange = (key: string, value: any) => { // eslint-disable-line @typescript-eslint/no-explicit-any
+  const handlePropChange = (key: string, value: unknown) => {
     if (!selectedComponent) return;
     updateComponent(selectedComponent.id, {
       props: { ...selectedComponent.props, [key]: value }
-    });
+    } as Partial<OverlayComponent>);
   };
   
-  const handleJournalDataChange = (index: number, field: 'day' | 'profit', value: string) => {
+  const handleDurationChange = (val: string) => {
+     if (!selectedComponent) return;
+     
+     if (val === '') {
+        updateComponent(selectedComponent.id, { duration: undefined });
+        return;
+     }
+
+     const newDurationSeconds = Number(val);
+     const newDurationMs = newDurationSeconds * 1000;
+     
+     updateComponent(selectedComponent.id, { duration: newDurationMs });
+     
+     // Sync speed for marquee if duration changes (legacy behavior, though Marquee now uses onscreenDuration)
+     if (selectedComponent.type === 'marquee' && newDurationMs > 0) {
+        updateComponent(selectedComponent.id, {
+            props: { ...selectedComponent.props, speed: Math.round(1000000 / newDurationMs) }
+        });
+     }
+  };
+
+  const handleMarqueeDurationChange = (key: 'onscreenDuration' | 'offscreenDuration', val: string) => {
     if (!selectedComponent) return;
+    
+    if (val === '') {
+        updateComponent(selectedComponent.id, { [key]: undefined });
+        return;
+    }
+
+    const seconds = Number(val);
+    updateComponent(selectedComponent.id, { [key]: seconds * 1000 });
+  };
+
+  const handleJournalDataChange = (index: number, field: 'day' | 'profit', value: string) => {
+    if (selectedComponent?.type !== 'journal') return;
     const currentData = [...selectedComponent.props.data];
     if (field === 'profit') {
         currentData[index] = { ...currentData[index], profit: value === '' ? 0 : Number(value) }; 
@@ -89,6 +125,10 @@ export const Inspector: React.FC = () => {
     reader.readAsDataURL(file);
     e.target.value = '';
   };
+  
+  const filteredThemes = getAllThemes().filter(t => 
+    t.name.toLowerCase().includes(themeSearch.toLowerCase())
+  );
 
   if (!selectedComponent) {
     return (
@@ -118,20 +158,41 @@ export const Inspector: React.FC = () => {
         </div>
 
         <div className="space-y-2">
-          <label className="block text-xs font-medium text-neutral-400 uppercase">Theme</label>
-          <div className="grid grid-cols-1 gap-2">
-            {DEFAULT_THEMES.map(theme => (
+          <div className="flex justify-between items-center">
+             <label className="block text-xs font-medium text-neutral-400 uppercase">Theme</label>
+             <div className="relative">
+                <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-neutral-500" />
+                <input 
+                   value={themeSearch}
+                   onChange={(e) => setThemeSearch(e.target.value)}
+                   placeholder="Search themes..."
+                   className="bg-neutral-800 border border-neutral-700 rounded-full pl-6 pr-2 py-0.5 text-xs w-32 focus:w-40 transition-all"
+                />
+             </div>
+          </div>
+          
+          <div className="grid grid-cols-1 gap-2 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
+            {filteredThemes.map(theme => (
               <button
                 key={theme.id}
                 onClick={() => setTheme(theme.id)}
-                className={`flex items-center p-2 rounded border text-left ${
+                className={`flex items-center p-2 rounded border text-left transition-all ${
                   activeThemeId === theme.id 
-                    ? 'bg-violet-900/30 border-violet-500 text-violet-200' 
-                    : 'bg-neutral-800 border-neutral-700 text-neutral-300 hover:border-neutral-600'
+                    ? 'bg-violet-900/30 border-violet-500 text-violet-200 shadow-[0_0_10px_rgba(139,92,246,0.2)]' 
+                    : 'bg-neutral-800 border-neutral-700 text-neutral-300 hover:border-neutral-600 hover:bg-neutral-750'
                 }`}
               >
-                <div className="w-4 h-4 rounded-full mr-3" style={{ backgroundColor: theme.colors.accent }} />
-                <span className="text-sm font-medium">{theme.name}</span>
+                <div className="w-8 h-8 rounded mr-3 shadow-inner flex items-center justify-center text-[10px] font-bold" style={{ backgroundColor: theme.colors.surface, color: theme.colors.text, border: `1px solid ${theme.colors.border}` }}>
+                   <span style={{ color: theme.colors.accent }}>Ag</span>
+                </div>
+                <div className="flex-1">
+                   <div className="text-sm font-medium">{theme.name}</div>
+                   <div className="flex gap-1 mt-1">
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: theme.colors.accent }} />
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: theme.colors.secondary }} />
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: theme.colors.positive }} />
+                   </div>
+                </div>
               </button>
             ))}
           </div>
@@ -147,7 +208,7 @@ export const Inspector: React.FC = () => {
             Open Preview
           </a>
           <p className="mt-2 text-xs text-neutral-500 text-center">
-            Use the URL of the preview page as a "Browser Source" in OBS.
+            Use the URL of the preview page as a &quot;Browser Source&quot; in OBS.
           </p>
         </div>
       </div>
@@ -194,9 +255,64 @@ export const Inspector: React.FC = () => {
       </div>
 
       <div className="space-y-2">
+          <label className="text-xs font-medium text-neutral-400 uppercase">Animation</label>
+          
+          <div className="flex items-center gap-2 mb-2">
+             <input
+               type="checkbox"
+               checked={selectedComponent.loop ?? true}
+               onChange={(e) => updateComponent(selectedComponent.id, { loop: e.target.checked })}
+             />
+             <label className="text-sm text-neutral-300">Loop Animation</label>
+          </div>
+
+          {selectedComponent.type === 'marquee' || selectedComponent.type === 'journal' ? (
+             <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                   <label className="text-[10px] text-neutral-500 block">Onscreen (s)</label>
+                   <input 
+                     type="number"
+                     value={selectedComponent.onscreenDuration ? selectedComponent.onscreenDuration / 1000 : ''}
+                     placeholder="20"
+                     onChange={(e) => handleMarqueeDurationChange('onscreenDuration', e.target.value)}
+                     className="w-full bg-neutral-800 border border-neutral-700 rounded px-2 py-1.5 text-sm"
+                     step="0.1"
+                   />
+                </div>
+                <div className="space-y-1">
+                   <label className="text-[10px] text-neutral-500 block">Offscreen (s)</label>
+                   <input 
+                     type="number"
+                     value={selectedComponent.offscreenDuration ? selectedComponent.offscreenDuration / 1000 : ''}
+                     placeholder="5"
+                     onChange={(e) => handleMarqueeDurationChange('offscreenDuration', e.target.value)}
+                     className="w-full bg-neutral-800 border border-neutral-700 rounded px-2 py-1.5 text-sm"
+                     step="0.1"
+                   />
+                </div>
+             </div>
+          ) : (
+          <div className="space-y-1">
+              <label className="text-[10px] text-neutral-500 block">Duration (s)</label>
+             <input 
+               type="number"
+                value={selectedComponent.duration ? selectedComponent.duration / 1000 : ''}
+                placeholder="5"
+               onChange={(e) => handleDurationChange(e.target.value)}
+               className="w-full bg-neutral-800 border border-neutral-700 rounded px-2 py-1.5 text-sm"
+                step="0.1"
+             />
+             <p className="text-[10px] text-neutral-600">
+                Entrance animation duration.
+             </p>
+          </div>
+          )}
+      </div>
+
+      <div className="space-y-2">
           <label className="text-xs font-medium text-neutral-400 uppercase">Font</label>
           <select 
-            value={selectedComponent.props.fontFamily || 'inherit'} 
+            value={'fontFamily' in selectedComponent.props ? selectedComponent.props.fontFamily ?? 'inherit' : 'inherit'} 
             onChange={(e) => handlePropChange('fontFamily', e.target.value)}
             className="w-full bg-neutral-800 border border-neutral-700 rounded px-2 py-1.5 text-sm"
           >
@@ -226,7 +342,12 @@ export const Inspector: React.FC = () => {
               min="10"
               max="200"
               value={selectedComponent.props.speed}
-              onChange={(e) => handlePropChange('speed', Number(e.target.value))}
+              onChange={(e) => {
+                 const newSpeed = Number(e.target.value);
+                 handlePropChange('speed', newSpeed);
+                 // Sync duration
+                 updateComponent(selectedComponent.id, { duration: Math.round(1000000 / newSpeed) });
+              }}
               className="w-full"
             />
           </div>
@@ -242,7 +363,7 @@ export const Inspector: React.FC = () => {
                     <span className="text-[10px] text-neutral-500 block mb-1">Main Heading</span>
                     <input 
                         placeholder="Weekly Journal"
-                        value={selectedComponent.props.heading || 'Weekly Journal'}
+                        value={selectedComponent.props.heading ?? 'Weekly Journal'}
                         onChange={(e) => handlePropChange('heading', e.target.value)}
                         className="w-full bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-sm"
                     />
@@ -251,7 +372,7 @@ export const Inspector: React.FC = () => {
                     <span className="text-[10px] text-neutral-500 block mb-1">Sub Heading</span>
                     <input 
                         placeholder="Current Week"
-                        value={selectedComponent.props.subHeading || 'Current Week'}
+                        value={selectedComponent.props.subHeading ?? 'Current Week'}
                         onChange={(e) => handlePropChange('subHeading', e.target.value)}
                         className="w-full bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-sm"
                     />
@@ -262,7 +383,7 @@ export const Inspector: React.FC = () => {
            <div className="flex items-center gap-2 pt-2">
              <input
                type="checkbox"
-               checked={selectedComponent.props.showTotal}
+               checked={selectedComponent.props.showTotal ?? true}
                onChange={(e) => handlePropChange('showTotal', e.target.checked)}
              />
              <label className="text-sm text-neutral-300">Show Weekly Total</label>
@@ -271,7 +392,7 @@ export const Inspector: React.FC = () => {
            <div className="space-y-2">
              <label className="text-xs text-neutral-400 uppercase">Daily Profit</label>
              <div className="space-y-2">
-               {selectedComponent.props.data.map((row: any, idx: number) => ( // eslint-disable-line @typescript-eslint/no-explicit-any
+               {selectedComponent.props.data.map((row, idx: number) => (
                  <div key={idx} className="flex gap-2 items-center">
                    <input
                       className="w-12 bg-neutral-800 border border-neutral-700 rounded px-1 py-1 text-sm text-center"
@@ -315,7 +436,7 @@ export const Inspector: React.FC = () => {
              <input 
                 value={selectedComponent.props.src?.startsWith('data:') 
                     ? (selectedComponent.props.fileName ? `Local File: ${selectedComponent.props.fileName}` : 'Embedded Image Data') 
-                    : (selectedComponent.props.src || '')}
+                    : (selectedComponent.props.src ?? '')}
                 onChange={(e) => {
                     // Allow pasting URL, but if it was data URL and they edit it, it resets
                     handlePropChange('src', e.target.value);
@@ -337,7 +458,7 @@ export const Inspector: React.FC = () => {
            <div className="space-y-1">
              <label className="text-xs text-neutral-400">Fit Mode</label>
              <select 
-               value={selectedComponent.props.objectFit || 'contain'}
+               value={selectedComponent.props.objectFit ?? 'contain'}
                onChange={(e) => handlePropChange('objectFit', e.target.value)}
                className="w-full bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-sm"
              >

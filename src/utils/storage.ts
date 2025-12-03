@@ -19,25 +19,33 @@ export const exportConfig = () => {
   URL.revokeObjectURL(url);
 };
 
+interface ImportedConfig {
+  version: number;
+  components: unknown;
+  activeThemeId: unknown;
+  canvasWidth?: number;
+  canvasHeight?: number;
+}
+
 export const importConfig = (file: File) => {
   return new Promise<void>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const config = JSON.parse(e.target?.result as string);
+        const config = JSON.parse(e.target?.result as string) as ImportedConfig;
         if (config.version === 1) {
           useOverlayStore.setState({
              components: config.components,
              activeThemeId: config.activeThemeId,
-             canvasWidth: config.canvasWidth || 1920,
-             canvasHeight: config.canvasHeight || 1080,
+             canvasWidth: config.canvasWidth ?? 1920,
+             canvasHeight: config.canvasHeight ?? 1080,
           });
           resolve();
         } else {
           reject(new Error('Unknown config version'));
         }
       } catch (err) {
-        reject(err);
+        reject(err instanceof Error ? err : new Error(String(err)));
       }
     };
     reader.readAsText(file);

@@ -38,7 +38,8 @@ export const MediaComponent: React.FC<MediaComponentProps> = ({
   }
 
   // Simple check for video extensions
-  const isVideo = src.match(/\.(mp4|webm|ogg|mov)$/i);
+  const videoRegex = /\.(mp4|webm|ogg|mov)$/i;
+  const isVideo = videoRegex.exec(src);
 
   if (isVideo) {
     return (

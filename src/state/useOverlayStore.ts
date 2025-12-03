@@ -2,11 +2,13 @@ import { create } from 'zustand';
 import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
 import { get, set, del } from 'idb-keyval';
+import type { ComponentType, Theme, MarqueeProps, JournalProps, MediaProps } from '../types/theme';
+import { getTheme } from '../themes/index';
 
 // Custom storage adapter for IndexedDB
 const storage: StateStorage = {
   getItem: async (name: string): Promise<string | null> => {
-    return (await get(name)) || null;
+    return (await get(name)) ?? null;
   },
   setItem: async (name: string, value: string): Promise<void> => {
     await set(name, value);
@@ -16,188 +18,40 @@ const storage: StateStorage = {
   },
 };
 
-export type ComponentType = 'marquee' | 'journal' | 'media';
+export type { ComponentType, Theme };
 
-export interface OverlayComponent {
+export interface BaseOverlayComponent {
   id: string;
-  type: ComponentType;
   name: string;
   x: number;
   y: number;
   width: number;
   height: number;
   zIndex: number;
-  props: Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+  duration?: number; // Animation loop duration in ms
+  loop: boolean ;
 }
 
-export interface Theme {
-  id: string;
-  name: string;
-  colors: {
-    background: string;
-    text: string;
-    accent: string;
-    secondary: string;
-    border: string;
-    surface: string;
-    positive: string;
-    negative: string;
-  };
-  fontFamily: string;
+export interface MarqueeComponent extends BaseOverlayComponent {
+  type: 'marquee';
+  props: MarqueeProps;
+  onscreenDuration?: number; // ms
+  offscreenDuration?: number; // ms
 }
 
-export const DEFAULT_THEMES: Theme[] = [
-  {
-    id: 'dark-modern',
-    name: 'Dark Modern',
-    colors: {
-      background: 'rgba(0, 0, 0, 0)',
-      text: '#ffffff',
-      accent: '#8b5cf6', // Violet
-      secondary: '#6b7280',
-      border: '#374151',
-      surface: '#1f2937',
-      positive: '#10b981',
-      negative: '#ef4444',
-    },
-    fontFamily: 'Inter, system-ui, sans-serif',
-  },
-  {
-    id: 'neon-cyber',
-    name: 'Neon Cyber',
-    colors: {
-      background: 'rgba(0, 0, 0, 0)',
-      text: '#e0f2fe',
-      accent: '#0ea5e9', // Cyan
-      secondary: '#94a3b8',
-      border: '#1e293b',
-      surface: '#0f172a',
-      positive: '#22d3ee',
-      negative: '#f43f5e',
-    },
-    fontFamily: '"Courier New", monospace',
-  },
-  {
-    id: 'clean-light',
-    name: 'Clean Light',
-    colors: {
-      background: 'rgba(0, 0, 0, 0)',
-      text: '#111827',
-      accent: '#2563eb', // Blue
-      secondary: '#4b5563',
-      border: '#e5e7eb',
-      surface: '#ffffff',
-      positive: '#059669',
-      negative: '#dc2626',
-    },
-    fontFamily: 'Inter, system-ui, sans-serif',
-  },
-  {
-    id: 'midnight-blue',
-    name: 'Midnight Blue',
-    colors: {
-      background: 'rgba(0, 0, 0, 0)',
-      text: '#e2e8f0',
-      accent: '#fbbf24', // Amber/Gold
-      secondary: '#1e293b',
-      border: '#334155',
-      surface: '#0f172a',
-      positive: '#34d399',
-      negative: '#f87171',
-    },
-    fontFamily: '"Roboto Slab", serif',
-  },
-  {
-    id: 'forest-glass',
-    name: 'Forest Glass',
-    colors: {
-      background: 'rgba(0, 0, 0, 0)',
-      text: '#ecfdf5',
-      accent: '#34d399', // Emerald
-      secondary: '#064e3b',
-      border: '#059669',
-      surface: '#022c22',
-      positive: '#6ee7b7',
-      negative: '#fca5a5',
-    },
-    fontFamily: 'Optima, Candara, sans-serif',
-  },
-  {
-    id: 'crimson-esports',
-    name: 'Crimson Esports',
-    colors: {
-      background: 'rgba(0, 0, 0, 0)',
-      text: '#ffffff',
-      accent: '#dc2626', // Red
-      secondary: '#1f2937',
-      border: '#7f1d1d',
-      surface: '#000000',
-      positive: '#22c55e',
-      negative: '#ef4444',
-    },
-    fontFamily: 'Impact, Haettenschweiler, sans-serif',
-  },
-  {
-    id: 'royal-gold',
-    name: 'Royal Gold',
-    colors: {
-      background: 'rgba(0, 0, 0, 0)',
-      text: '#faf5ff',
-      accent: '#fbbf24', // Gold
-      secondary: '#581c87', // Deep Purple
-      border: '#7e22ce',
-      surface: '#3b0764',
-      positive: '#4ade80',
-      negative: '#f87171',
-    },
-    fontFamily: '"Playfair Display", serif',
-  },
-  {
-    id: 'slate-minimalist',
-    name: 'Slate Minimalist',
-    colors: {
-      background: 'rgba(0, 0, 0, 0)',
-      text: '#f8fafc',
-      accent: '#94a3b8', // Slate
-      secondary: '#334155',
-      border: '#475569',
-      surface: '#1e293b',
-      positive: '#a3e635',
-      negative: '#fca5a5',
-    },
-    fontFamily: 'Helvetica, Arial, sans-serif',
-  },
-  {
-    id: 'retro-wave',
-    name: 'Retro Wave',
-    colors: {
-      background: 'rgba(0, 0, 0, 0)',
-      text: '#fae8ff',
-      accent: '#f0abfc', // Fuchsia
-      secondary: '#0c4a6e',
-      border: '#c026d3',
-      surface: '#2e1065',
-      positive: '#22d3ee',
-      negative: '#f43f5e',
-    },
-    fontFamily: '"Comic Sans MS", cursive, sans-serif', // Or a retro font if available
-  },
-  {
-    id: 'broadcast-sports',
-    name: 'Broadcast Sports',
-    colors: {
-      background: 'rgba(0, 0, 0, 0)',
-      text: '#ffffff',
-      accent: '#ea580c', // Orange
-      secondary: '#0f172a',
-      border: '#ffffff', // High contrast white border
-      surface: '#1e293b',
-      positive: '#84cc16',
-      negative: '#ef4444',
-    },
-    fontFamily: 'Oswald, sans-serif',
-  },
-];
+export interface JournalComponent extends BaseOverlayComponent {
+  type: 'journal';
+  props: JournalProps;
+  onscreenDuration?: number; // ms
+  offscreenDuration?: number; // ms
+}
+
+export interface MediaComponent extends BaseOverlayComponent {
+  type: 'media';
+  props: MediaProps;
+}
+
+export type OverlayComponent = MarqueeComponent | JournalComponent | MediaComponent;
 
 interface OverlayState {
   components: OverlayComponent[];
@@ -228,6 +82,10 @@ const INITIAL_COMPONENTS: OverlayComponent[] = [
     width: 1920,
     height: 60,
     zIndex: 1,
+    duration: 20000,
+    loop: true,
+    onscreenDuration: 20000,
+    offscreenDuration: 5000,
     props: { 
       text: 'DISCLAIMER: Not financial advice. For educational purposes only.', 
       speed: 50, 
@@ -244,6 +102,10 @@ const INITIAL_COMPONENTS: OverlayComponent[] = [
     width: 300,
     height: 400,
     zIndex: 2,
+    duration: 5000,
+    loop: true,
+    onscreenDuration: 10000,
+    offscreenDuration: 5000,
     props: { 
       heading: 'Weekly Journal',
       subHeading: 'Current Week',
@@ -277,16 +139,53 @@ export const useOverlayStore = create<OverlayState>()(
         const existingCount = components.filter(c => c.type === type).length;
         const offset = existingCount * 20;
         
-        const defaultProps: any = { fontFamily: 'inherit' }; // eslint-disable-line @typescript-eslint/no-explicit-any
+        let component: OverlayComponent;
+        
+        const defaultSize = type === 'marquee'
+            ? { width: 1920, height: 60 }
+            : type === 'media' ? { width: 400, height: 300 }
+            : { width: 300, height: 400 };
+        
+        const defaultDuration = type === 'marquee' ? 20000 : 5000;
+
+        // Position center-ish with offset
+        const startX = (canvasWidth / 2 - defaultSize.width / 2) + offset;
+        const startY = (canvasHeight / 2 - defaultSize.height / 2) + offset;
+        
+        // Determine max zIndex
+        const maxZ = components.length > 0 ? Math.max(...components.map(c => c.zIndex)) : 0;
+        
+        const baseComponent = {
+          id,
+          name: name ?? `${type.charAt(0).toUpperCase() + type.slice(1)} ${existingCount + 1}`,
+          x: startX,
+          y: startY,
+          zIndex: maxZ + 1,
+          duration: defaultDuration,
+          ...defaultSize,
+          loop: true, // Default loop to true
+        };
         
         if (type === 'marquee') {
-          Object.assign(defaultProps, {
-            text: 'New Marquee Text', 
-            speed: 50, 
-            separator: ' • '
-          });
+          component = {
+            ...baseComponent,
+            type: 'marquee',
+            onscreenDuration: 20000, // Default 20s onscreen
+            offscreenDuration: 5000, // Default 5s offscreen
+            props: {
+              text: 'New Marquee Text',
+              speed: 50,
+              separator: ' • ',
+              fontFamily: 'inherit'
+            }
+          };
         } else if (type === 'journal') {
-           Object.assign(defaultProps, {
+          component = {
+            ...baseComponent,
+            type: 'journal',
+            onscreenDuration: 10000, // Default 10s onscreen
+            offscreenDuration: 5000, // Default 5s offscreen
+            props: {
               heading: 'Weekly Journal',
               subHeading: 'Week ' + (existingCount + 1),
               data: [
@@ -296,41 +195,25 @@ export const useOverlayStore = create<OverlayState>()(
                 { day: 'Thu', profit: 0 },
                 { day: 'Fri', profit: 0 },
               ],
-              showTotal: true 
-            });
-        } else if (type === 'media') {
-           Object.assign(defaultProps, {
-             src: '',
-             mediaType: 'image', // image, video, iframe
-             objectFit: 'contain'
-           });
+              showTotal: true,
+              fontFamily: 'inherit'
+            }
+          };
+        } else {
+          component = {
+            ...baseComponent,
+            type: 'media',
+            props: {
+              src: '',
+              objectFit: 'contain' as const
+            }
+          };
         }
-            
-        const defaultSize = type === 'marquee'
-            ? { width: 1920, height: 60 }
-            : type === 'media' ? { width: 400, height: 300 }
-            : { width: 300, height: 400 };
-        
-        // Position center-ish with offset
-        const startX = (canvasWidth / 2 - defaultSize.width / 2) + offset;
-        const startY = (canvasHeight / 2 - defaultSize.height / 2) + offset;
-        
-        // Determine max zIndex
-        const maxZ = components.length > 0 ? Math.max(...components.map(c => c.zIndex)) : 0;
 
         set((state) => ({
           components: [
             ...state.components,
-            {
-              id,
-              type,
-              name: name || `${type.charAt(0).toUpperCase() + type.slice(1)} ${existingCount + 1}`,
-              x: startX,
-              y: startY,
-              zIndex: maxZ + 1,
-              ...defaultSize,
-              props: defaultProps,
-            },
+            component,
           ],
           selectedComponentId: id,
         }));
@@ -341,7 +224,7 @@ export const useOverlayStore = create<OverlayState>()(
       updateComponent: (id, updates) => {
         set((state) => ({
           components: state.components.map((c) =>
-            c.id === id ? { ...c, ...updates } : c
+            c.id === id ? { ...c, ...updates } as OverlayComponent : c
           ),
         }));
       },
@@ -364,8 +247,6 @@ export const useOverlayStore = create<OverlayState>()(
            const component = components[index];
            
            if (direction === 'top') {
-             // Move to end of array (highest zIndex)
-             // Recalculate all zIndices
              const others = components.filter(c => c.id !== id);
              return {
                components: [
@@ -374,7 +255,6 @@ export const useOverlayStore = create<OverlayState>()(
                ]
              };
            } else if (direction === 'bottom') {
-             // Move to start
              const others = components.filter(c => c.id !== id);
              return {
                components: [
@@ -384,17 +264,14 @@ export const useOverlayStore = create<OverlayState>()(
              };
            } else if (direction === 'up') {
              if (index === components.length - 1) return { components: state.components };
-             // Swap with next
              const next = components[index + 1];
              components[index + 1] = component;
              components[index] = next;
-             // Reassign z-indices
              return {
                components: components.map((c, i) => ({ ...c, zIndex: i + 1 }))
              };
            } else if (direction === 'down') {
              if (index === 0) return { components: state.components };
-             // Swap with prev
              const prev = components[index - 1];
              components[index - 1] = component;
              components[index] = prev;
@@ -413,7 +290,7 @@ export const useOverlayStore = create<OverlayState>()(
 
       getActiveTheme: () => {
         const { activeThemeId } = get();
-        return DEFAULT_THEMES.find(t => t.id === activeThemeId) || DEFAULT_THEMES[0];
+        return getTheme(activeThemeId);
       }
     }),
     {
@@ -423,7 +300,7 @@ export const useOverlayStore = create<OverlayState>()(
          activeThemeId: state.activeThemeId,
          canvasWidth: state.canvasWidth,
          canvasHeight: state.canvasHeight
-      }), // Only persist data, not actions
+      }), 
       storage: createJSONStorage(() => storage),
     }
   )

@@ -17,7 +17,7 @@ export const StorePage: React.FC = () => {
       const newId = addComponent(comp.type, `${comp.name} (Copy)`);
       // Copy props manually since addComponent uses defaults
       updateComponent(newId, { 
-        props: JSON.parse(JSON.stringify(comp.props)),
+        props: JSON.parse(JSON.stringify(comp.props)) as typeof comp.props,
         width: comp.width,
         height: comp.height
       });
