@@ -1,0 +1,54 @@
+{
+  "components": [
+    {
+      "id": "default-marquee",
+      "type": "marquee",
+      "x": 0,
+      "y": 1020,
+      "width": 1920,
+      "height": 60,
+      "props": {
+        "text": "DISCLAIMER: Not financial advice. For educational purposes only.",
+        "speed": 50,
+        "separator": " • "
+      }
+    },
+    {
+      "id": "default-journal",
+      "type": "journal",
+      "x": 50,
+      "y": 50,
+      "width": 300,
+      "height": 400,
+      "props": {
+        "data": [
+          {
+            "day": "Mon",
+            "profit": 110
+          },
+          {
+            "day": "Tue",
+            "profit": 913
+          },
+          {
+            "day": "Wed",
+            "profit": 0
+          },
+          {
+            "day": "Thu",
+            "profit": 0
+          },
+          {
+            "day": "Fri",
+            "profit": 0
+          }
+        ],
+        "showTotal": true
+      }
+    }
+  ],
+  "activeThemeId": "dark-modern",
+  "canvasWidth": 1920,
+  "canvasHeight": 1080,
+  "version": 1
+}
