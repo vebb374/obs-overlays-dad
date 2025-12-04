@@ -1,3 +1,4 @@
+// storage utilities
 import { useOverlayStore, type OverlayState } from '../state/useOverlayStore';
 import type { OverlayComponent } from '../types/overlay';
 import type { Theme } from '../types/theme';
@@ -37,7 +38,7 @@ export const applySceneConfig = (config: SceneConfig) => {
   });
 };
 
-const normalizeConfig = (value: unknown): SceneConfig => {
+export const normalizeConfig = (value: unknown): SceneConfig => {
   if (!value || typeof value !== 'object') {
     throw new Error('Invalid scene file');
   }
@@ -97,4 +98,22 @@ export const loadSceneFromUrl = async (sceneUrl: string, init?: RequestInit) => 
   const parsed = normalizeConfig(await response.json());
   applySceneConfig(parsed);
   return parsed;
+};
+
+export const saveSceneToBackend = async () => {
+  const config = createSceneSnapshot();
+  // Update timestamp for this save
+  config.updatedAt = Date.now();
+
+  const response = await fetch('/api/scene', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(config),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to save scene');
+  }
+
+  return config;
 };

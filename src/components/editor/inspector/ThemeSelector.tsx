@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, Palette, RotateCcw, Save, X } from 'lucide-react';
 import { getAllThemes } from '../../../themes';
 import { useThemeSelectors } from '../../../state/selectors';
@@ -14,35 +14,6 @@ export const ThemeSelector: React.FC = () => {
   
   // Store original overrides to revert on cancel
   const [originalOverrides, setOriginalOverrides] = useState<Partial<Theme['colors']>>({});
-
-  // Initialize preview with current persisted overrides when entering edit mode
-  useEffect(() => {
-    if (isEditingColors) {
-      setPreviewOverrides(useOverlayStore.getState().themeOverrides);
-    }
-  }, [isEditingColors]);
-
-  // Handle click outside to close
-  useEffect(() => {
-    if (!isEditingColors) return;
-
-    const handleClickOutside = (event: MouseEvent) => {
-      if (editorRef.current && !editorRef.current.contains(event.target as Node)) {
-        // Clicked outside - act as Cancel
-        // But wait, user might be clicking on the color picker native popup?
-        // Native color picker popups are usually outside the DOM hierarchy we can check easily.
-        // But clicking ON the input itself is inside.
-        // Interacting with the native picker dialog usually doesn't fire clicks on the document body until closed.
-        // So this is likely safe.
-        handleCancel();
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isEditingColors, originalOverrides]); // Depend on originalOverrides so handleCancel has correct closure if needed
 
   const activeTheme = getActiveTheme();
   
@@ -74,23 +45,43 @@ export const ThemeSelector: React.FC = () => {
   };
   
   const handleStartEditing = () => {
-    setOriginalOverrides(useOverlayStore.getState().themeOverrides);
+    const currentOverrides = useOverlayStore.getState().themeOverrides;
+    setOriginalOverrides(currentOverrides);
+    setPreviewOverrides(currentOverrides);
     setIsEditingColors(true);
   };
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     // Revert to original state
     resetThemeOverrides();
     Object.entries(originalOverrides).forEach(([key, value]) => {
-       setThemeOverride(key as keyof Theme['colors'], value as string);
+       if (value) setThemeOverride(key as keyof Theme['colors'], value);
     });
     setIsEditingColors(false);
-  };
+  }, [resetThemeOverrides, originalOverrides, setThemeOverride]);
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     // Changes are already in store (real-time preview), so just exit mode
     setIsEditingColors(false);
-  };
+  }, []);
+
+  // Handle click outside to close
+  useEffect(() => {
+    if (!isEditingColors) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (editorRef.current && !editorRef.current.contains(event.target as Node)) {
+        // Clicked outside - act as Save (keep changes and close)
+        handleSave();
+      }
+    };
+
+    // Use capture phase to detect clicks even if components like Canvas stop propagation
+    document.addEventListener('mousedown', handleClickOutside, true);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside, true);
+    };
+  }, [isEditingColors, handleSave]);
 
   const renderColorPicker = (key: keyof Theme['colors']) => (
     <div key={key} className="flex items-center justify-between p-2 bg-neutral-800 rounded border border-neutral-700">
@@ -175,6 +166,10 @@ export const ThemeSelector: React.FC = () => {
                 <button
                     key={theme.id}
                     onClick={() => setTheme(theme.id)}
+                    onDoubleClick={() => {
+                      setTheme(theme.id);
+                      handleStartEditing();
+                    }}
                     className={`flex items-center p-2 rounded border text-left transition-all group ${
                     activeThemeId === theme.id 
                         ? 'bg-violet-900/20 border-violet-500/50 shadow-[0_0_10px_rgba(139,92,246,0.1)]' 

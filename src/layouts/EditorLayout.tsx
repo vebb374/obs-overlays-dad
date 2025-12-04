@@ -4,13 +4,14 @@ import {
   Plus, 
   Download, 
   Upload, 
+  Save,
   ChevronDown, 
   Image, 
   Type, 
   List,
 } from 'lucide-react';
 import { useComponentSelectors } from '../state/selectors';
-import { exportConfig, importConfig } from '../utils/storage';
+import { exportConfig, importConfig, saveSceneToBackend } from '../utils/storage';
 
 export const EditorLayout: React.FC = () => {
   const { addComponent, updateComponent } = useComponentSelectors();
@@ -34,6 +35,16 @@ export const EditorLayout: React.FC = () => {
 
   const handleImportClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleSaveScene = async () => {
+    try {
+      await saveSceneToBackend();
+      showToast('Scene saved successfully');
+    } catch (err) {
+      showToast('Failed to save scene');
+      console.error(err);
+    }
   };
 
   const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -170,6 +181,15 @@ export const EditorLayout: React.FC = () => {
          </div>
          
          <div className="flex items-center gap-2">
+             <button 
+                onClick={handleSaveScene}
+                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-500 rounded transition-colors shadow-sm mr-2"
+                title="Save Scene to Server"
+             >
+                <Save size={14} />
+                <span>Save Scene</span>
+             </button>
+
              <button 
                 onClick={handleImportClick}
                 className="flex items-center gap-2 px-3 py-1.5 text-xs text-neutral-400 hover:text-white hover:bg-neutral-800 rounded transition-colors"

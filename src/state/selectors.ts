@@ -15,6 +15,7 @@ export const useThemeSelectors = () => {
   return useOverlayStore(
     useShallow((state) => ({
       activeThemeId: state.activeThemeId,
+      themeOverrides: state.themeOverrides,
       setTheme: state.setTheme,
       getActiveTheme: state.getActiveTheme,
       setThemeOverride: state.setThemeOverride,
