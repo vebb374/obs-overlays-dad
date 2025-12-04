@@ -1,5 +1,7 @@
+import React from 'react';
 import type { Theme } from '../../types/theme';
-import { GoldCoinsBackground } from './GoldCoinsBackground';
+
+const GoldCoinsBackground = React.lazy(() => import('./GoldCoinsBackground').then(module => ({ default: module.GoldCoinsBackground })));
 
 export const goldCoins: Theme = {
   id: 'gold-coins',

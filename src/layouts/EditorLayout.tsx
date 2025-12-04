@@ -2,10 +2,11 @@ import React, { useState, useCallback, useRef } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { Plus, Download, Upload, ChevronDown, Image, Type, List } from 'lucide-react';
 import { useOverlayStore } from '../state/useOverlayStore';
+import { useComponentSelectors } from '../state/selectors';
 import { exportConfig, importConfig } from '../utils/storage';
 
 export const EditorLayout: React.FC = () => {
-  const { addComponent } = useOverlayStore();
+  const { addComponent, updateComponent } = useComponentSelectors();
   const [toast, setToast] = useState<{ message: string, id: number } | null>(null);
   const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -79,10 +80,8 @@ export const EditorLayout: React.FC = () => {
             const result = event.target?.result as string;
             const id = addComponent('media');
             // Need to update the newly added component with the source
-            // Since addComponent returns ID, we can do this via a custom action or direct store update if exposed.
-            // Wait, my store's addComponent returns ID.
             if (id && result) {
-                useOverlayStore.getState().updateComponent(id, { 
+                updateComponent(id, { 
                    props: { 
                      src: result, 
                      objectFit: 'contain' 

@@ -15,7 +15,7 @@ A powerful, user-friendly web application for creating, customizing, and managin
     *   **Theming**: Choose from built-in themes (Dark Modern, Neon Cyber, Clean Light) or customize colors.
     *   **Typography**: Select fonts per component.
     *   **Layering**: Easily reorder elements (Bring to Front, Send Backward, etc.).
-*   **Persistence**: Your layout is automatically saved to your browser. You can also **Export** and **Import** configurations as JSON files for backup or sharing.
+*   **Persistence**: Your layout is automatically saved to your browser (IndexedDB). You can also **Export** and **Import** configurations as JSON files for backup or sharing.
 *   **OBS Integration**: Generates a clean, transparent URL specifically for OBS Browser Sources.
 
 ## 🛠️ Tech Stack
@@ -45,7 +45,7 @@ A powerful, user-friendly web application for creating, customizing, and managin
     ```bash
     npm run dev
     ```
-    The app will be available at `http://localhost:5173` (or the next available port).
+    The app will be available at `http://localhost:5173`.
 
 ## 🖥️ Usage Guide
 
@@ -74,6 +74,18 @@ A powerful, user-friendly web application for creating, customizing, and managin
 *   `npm run build`: Compiles the application for production.
 *   `npm run preview`: Locally preview the production build.
 *   `npm run lint`: Runs ESLint to check for code quality issues.
+*   `npm run type-check`: Runs TypeScript compiler check.
+
+## 🏗️ Architecture
+
+### State Management
+We use **Zustand** for state management. The store is split into slices (Canvas, Components, Theme) to maintain maintainability. State is persisted to IndexedDB using `idb-keyval` to handle large payloads (like images).
+
+### Theme System
+Themes are pluggable definitions located in `src/themes`. A theme defines a color palette, font family, and optional wrapper components or animation overrides. See `src/themes/README.md` for details on creating new themes.
+
+### Component Factory
+New overlay components are created via a Factory pattern (`src/state/factories`) to ensure consistent initialization of props and IDs.
 
 ## 🤝 Contributing
 

@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useRef, useLayoutEffect, useMemo } from 'react';
+import React, { useState, useRef, useLayoutEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Theme } from '../../state/useOverlayStore';
+import { useTimedVisibility } from '../../hooks/useTimedVisibility';
+import { useMarqueeVelocity } from '../../hooks/useMarqueeVelocity';
 
 interface MarqueeTickerProps {
   text: string;
@@ -41,62 +43,13 @@ export const MarqueeTicker: React.FC<MarqueeTickerProps> = ({
     }
   }, [text, separator, fontFamily, theme.fontFamily]);
 
-  // Determine scroll duration (speed)
-  // onscreenDuration should NOT dictate the speed, only how long it stays visible.
-  // Speed is determined by 'speed' prop or legacyDuration.
-  const scrollDurationSeconds = useMemo(() => {
-    if (legacyDuration) return legacyDuration / 1000;
+  const scrollDurationSeconds = useMarqueeVelocity(contentWidth, speed, legacyDuration);
 
-    if (contentWidth > 0) {
-      // We scroll 50% of the container.
-      // The container has 20 copies. 50% is 10 copies.
-      // Distance = 10 * singleItemWidth
-      const distance = contentWidth * 10;
-      // speed is treated as pixels per second
-      return distance / Math.max(speed, 1);
-    }
-
-    return 1000 / Math.max(speed, 1);
-  }, [legacyDuration, speed, contentWidth]);
-
-  // Lifecycle State
-  const [isVisible, setIsVisible] = useState(true);
-
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>;
-
-    if (isVisible) {
-      // Determine how long to stay visible
-      // Use onscreenDuration if available, else scrollDurationSeconds * 1000 (one cycle)
-      const stayDuration = onscreenDuration ?? (scrollDurationSeconds * 1000);
-      
-      if (loop) {
-         timer = setTimeout(() => {
-            setIsVisible(false);
-         }, stayDuration);
-      } else {
-         // If not looping, do we stay forever or disappear?
-         // "only when that is checked loop the animations."
-         // Usually means play once and stop (or disappear).
-         // Let's assume play once and disappear for "Entrance -> Run -> Exit".
-         timer = setTimeout(() => {
-            setIsVisible(false);
-         }, stayDuration);
-      }
-    } else {
-      // Hidden state
-      if (loop) {
-        const waitDuration = offscreenDuration ?? 5000; // Default 5s wait
-        timer = setTimeout(() => {
-          setIsVisible(true);
-        }, waitDuration);
-      }
-      // If not loop, we stay hidden (removed).
-    }
-
-    return () => clearTimeout(timer);
-  }, [isVisible, loop, onscreenDuration, offscreenDuration, scrollDurationSeconds, theme.id]);
-
+  const isVisible = useTimedVisibility({
+    duration: onscreenDuration ?? (scrollDurationSeconds * 1000),
+    offscreenDuration,
+    loop
+  });
 
   return (
     <div style={{ width: '100%', height, overflow: 'hidden' }}>

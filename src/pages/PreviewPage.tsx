@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useState } from 'react';
+import React, { useLayoutEffect, useState, Suspense } from 'react';
 import { useOverlayStore } from '../state/useOverlayStore';
 import { OverlayComponentRenderer } from '../components/overlay/OverlayComponentRenderer';
 
@@ -44,23 +44,25 @@ export const PreviewPage: React.FC = () => {
         }}
       >
         {theme.wrapperComponent ? (
-          <theme.wrapperComponent>
-            {components.map(comp => (
-              <div 
-                key={comp.id} 
-                style={{ 
-                  position: 'absolute', 
-                  left: comp.x, 
-                  top: comp.y,
-                  width: comp.width,
-                  height: comp.height,
-                  zIndex: comp.zIndex
-                }}
-              >
-                <OverlayComponentRenderer component={comp} theme={theme} />
-              </div>
-            ))}
-          </theme.wrapperComponent>
+          <Suspense fallback={null}>
+            <theme.wrapperComponent>
+              {components.map(comp => (
+                <div 
+                  key={comp.id} 
+                  style={{ 
+                    position: 'absolute', 
+                    left: comp.x, 
+                    top: comp.y,
+                    width: comp.width,
+                    height: comp.height,
+                    zIndex: comp.zIndex
+                  }}
+                >
+                  <OverlayComponentRenderer component={comp} theme={theme} />
+                </div>
+              ))}
+            </theme.wrapperComponent>
+          </Suspense>
         ) : (
           components.map(comp => (
             <div 

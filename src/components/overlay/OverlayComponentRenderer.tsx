@@ -1,5 +1,6 @@
 import React, { Suspense } from 'react';
-import { type OverlayComponent, type Theme } from '../../state/useOverlayStore';
+import type { Theme } from '../../types/theme';
+import type { OverlayComponent } from '../../types/overlay';
 
 const MarqueeTicker = React.lazy(() => import('./MarqueeTicker').then(module => ({ default: module.MarqueeTicker })));
 const WeeklyJournalCard = React.lazy(() => import('./WeeklyJournalCard').then(module => ({ default: module.WeeklyJournalCard })));

@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Theme } from '../../state/useOverlayStore';
 import { cn } from '../../utils/cn';
+import { useTimedVisibility } from '../../hooks/useTimedVisibility';
 
 interface JournalData {
   day: string;
@@ -44,36 +45,15 @@ export const WeeklyJournalCard: React.FC<WeeklyJournalCardProps> = ({
   };
 
   // Visibility State Logic
-  const [isVisible, setIsVisible] = useState(true);
-
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>;
-
-    if (isVisible) {
-      // If we have an onscreenDuration, use it. Otherwise, we might just stay visible forever unless loop is handled externally,
-      // but for consistency with marquee, let's respect onscreenDuration if present.
-      // If not present, and loop is true, maybe we don't hide? 
-      // The user asked for "onscreen offscreen timer for weekly journal too", so we assume they want it to hide.
-      
-      if (onscreenDuration) {
-          timer = setTimeout(() => {
-             setIsVisible(false);
-          }, onscreenDuration);
-      } 
-      // If no onscreenDuration is set, we just stay visible (default behavior)
-      
-    } else {
-      // Hidden state
-      if (loop) {
-        const waitDuration = offscreenDuration ?? 5000; // Default 5s wait
-        timer = setTimeout(() => {
-          setIsVisible(true);
-        }, waitDuration);
-      }
-    }
-
-    return () => clearTimeout(timer);
-  }, [isVisible, loop, onscreenDuration, offscreenDuration]);
+  const isVisible = useTimedVisibility({
+    duration: onscreenDuration ?? 0, // 0 means stay visible if logic inside hook handles it, but my hook logic treats >0 as timeout. 
+                                     // If onscreenDuration is undefined, we probably want to stay visible unless loop is on?
+                                     // The previous logic was: if onscreenDuration is set, hide after it. Else stay.
+                                     // My hook logic: if duration > 0, hide after duration.
+                                     // So if onscreenDuration is undefined (or 0), it stays visible. Correct.
+    offscreenDuration,
+    loop
+  });
 
 
   const defaultContainerVariants = {

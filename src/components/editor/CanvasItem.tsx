@@ -1,7 +1,8 @@
 import { memo } from 'react';
 import { Rnd } from 'react-rnd';
 import { OverlayComponentRenderer } from '../overlay/OverlayComponentRenderer';
-import { type OverlayComponent, type Theme } from '../../state/useOverlayStore';
+import type { Theme } from '../../types/theme';
+import type { OverlayComponent } from '../../types/overlay';
 
 interface CanvasItemProps {
   component: OverlayComponent;
