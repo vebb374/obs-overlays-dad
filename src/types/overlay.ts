@@ -33,3 +33,4 @@ export interface MediaComponent extends BaseOverlayComponent {
 
 export type OverlayComponent = MarqueeComponent | JournalComponent | MediaComponent;
 
+

@@ -104,3 +104,4 @@ animations: {
 *   **Performance**: Avoid heavy computations in the main render loop. Use `React.memo` and `useMemo` for complex animations.
 *   **Assets**: Keep assets lightweight (optimized SVGs, compressed images) as they load in the browser source.
 
+

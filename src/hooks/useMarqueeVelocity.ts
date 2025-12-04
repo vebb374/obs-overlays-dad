@@ -20,3 +20,4 @@ export const useMarqueeVelocity = (
   }, [legacyDuration, speed, contentWidth]);
 };
 
+
