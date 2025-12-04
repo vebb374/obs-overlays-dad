@@ -225,8 +225,8 @@ export const ComponentProperties: React.FC = () => {
                    <label className="text-[10px] text-neutral-500 block">Offscreen (s)</label>
                    <input 
                      type="number"
-                     value={selectedComponent.offscreenDuration ? selectedComponent.offscreenDuration / 1000 : ''}
-                     placeholder="5"
+                     value={selectedComponent.offscreenDuration !== undefined ? selectedComponent.offscreenDuration / 1000 : ''}
+                     placeholder="0"
                      onChange={(e) => handleMarqueeDurationChange('offscreenDuration', e.target.value)}
                      className="w-full bg-neutral-800 border border-neutral-700 rounded px-2 py-1.5 text-sm"
                      step="0.1"
@@ -282,7 +282,7 @@ export const ComponentProperties: React.FC = () => {
             <input
               type="range"
               min="10"
-              max="200"
+              max="500"
               value={selectedComponent.props.speed}
               onChange={(e) => {
                  const newSpeed = Number(e.target.value);

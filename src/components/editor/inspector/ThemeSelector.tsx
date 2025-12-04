@@ -1,15 +1,59 @@
-import React, { useState } from 'react';
-import { Search, Palette, RotateCcw } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Search, Palette, RotateCcw, Save, X } from 'lucide-react';
 import { getAllThemes } from '../../../themes';
 import { useThemeSelectors } from '../../../state/selectors';
 import type { Theme } from '../../../types/theme';
+import { useOverlayStore } from '../../../state/useOverlayStore';
 
 export const ThemeSelector: React.FC = () => {
   const { activeThemeId, setTheme, getActiveTheme, setThemeOverride, resetThemeOverrides } = useThemeSelectors();
   const [themeSearch, setThemeSearch] = useState('');
   const [isEditingColors, setIsEditingColors] = useState(false);
+  const [previewOverrides, setPreviewOverrides] = useState<Partial<Theme['colors']>>({});
+  const editorRef = useRef<HTMLDivElement>(null);
   
+  // Store original overrides to revert on cancel
+  const [originalOverrides, setOriginalOverrides] = useState<Partial<Theme['colors']>>({});
+
+  // Initialize preview with current persisted overrides when entering edit mode
+  useEffect(() => {
+    if (isEditingColors) {
+      setPreviewOverrides(useOverlayStore.getState().themeOverrides);
+    }
+  }, [isEditingColors]);
+
+  // Handle click outside to close
+  useEffect(() => {
+    if (!isEditingColors) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (editorRef.current && !editorRef.current.contains(event.target as Node)) {
+        // Clicked outside - act as Cancel
+        // But wait, user might be clicking on the color picker native popup?
+        // Native color picker popups are usually outside the DOM hierarchy we can check easily.
+        // But clicking ON the input itself is inside.
+        // Interacting with the native picker dialog usually doesn't fire clicks on the document body until closed.
+        // So this is likely safe.
+        handleCancel();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isEditingColors, originalOverrides]); // Depend on originalOverrides so handleCancel has correct closure if needed
+
   const activeTheme = getActiveTheme();
+  
+  // Merge preview overrides on top of active theme for display
+  const previewTheme = {
+    ...activeTheme,
+    colors: {
+      ...activeTheme.colors,
+      ...previewOverrides
+    }
+  };
 
   const filteredThemes = getAllThemes().filter(t => 
     t.name.toLowerCase().includes(themeSearch.toLowerCase())
@@ -19,15 +63,44 @@ export const ThemeSelector: React.FC = () => {
     'text', 'accent', 'secondary', 'border', 'surface', 'positive', 'negative', 'background'
   ];
 
+  const handleColorChange = (key: keyof Theme['colors'], value: string) => {
+    // Update local preview state
+    const newOverrides = { ...previewOverrides, [key]: value };
+    setPreviewOverrides(newOverrides);
+    
+    // Also immediately update the global store for real-time preview
+    // This satisfies "see the color change when i am editing in real time"
+    setThemeOverride(key, value);
+  };
+  
+  const handleStartEditing = () => {
+    setOriginalOverrides(useOverlayStore.getState().themeOverrides);
+    setIsEditingColors(true);
+  };
+
+  const handleCancel = () => {
+    // Revert to original state
+    resetThemeOverrides();
+    Object.entries(originalOverrides).forEach(([key, value]) => {
+       setThemeOverride(key as keyof Theme['colors'], value as string);
+    });
+    setIsEditingColors(false);
+  };
+
+  const handleSave = () => {
+    // Changes are already in store (real-time preview), so just exit mode
+    setIsEditingColors(false);
+  };
+
   const renderColorPicker = (key: keyof Theme['colors']) => (
     <div key={key} className="flex items-center justify-between p-2 bg-neutral-800 rounded border border-neutral-700">
       <span className="text-xs capitalize text-neutral-300">{key}</span>
       <div className="flex items-center gap-2">
-        <span className="text-[10px] font-mono text-neutral-500">{activeTheme.colors[key]}</span>
+        <span className="text-[10px] font-mono text-neutral-500">{previewTheme.colors[key]}</span>
         <input 
           type="color"
-          value={activeTheme.colors[key]}
-          onChange={(e) => setThemeOverride(key, e.target.value)}
+          value={previewTheme.colors[key]}
+          onChange={(e) => handleColorChange(key, e.target.value)}
           className="w-6 h-6 rounded overflow-hidden cursor-pointer border-0 p-0 bg-transparent"
         />
       </div>
@@ -35,18 +108,18 @@ export const ThemeSelector: React.FC = () => {
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" ref={editorRef}>
       <div className="flex justify-between items-center">
          <label className="block text-xs font-medium text-neutral-400 uppercase">Theme</label>
-         <button 
-            onClick={() => setIsEditingColors(!isEditingColors)}
-            className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded transition-colors ${
-                isEditingColors ? 'bg-violet-600 text-white' : 'text-neutral-400 hover:text-white hover:bg-neutral-800'
-            }`}
-         >
-            <Palette size={12} />
-            {isEditingColors ? 'Select Theme' : 'Edit Colors'}
-         </button>
+         {!isEditingColors && (
+             <button 
+                onClick={handleStartEditing}
+                className="flex items-center gap-1 text-[10px] px-2 py-1 rounded transition-colors text-neutral-400 hover:text-white hover:bg-neutral-800"
+             >
+                <Palette size={12} />
+                Edit Colors
+             </button>
+         )}
       </div>
 
       {isEditingColors ? (
@@ -54,7 +127,10 @@ export const ThemeSelector: React.FC = () => {
             <div className="flex justify-between items-center text-xs text-neutral-500 pb-2 border-b border-neutral-800">
                 <span>Customizing {activeTheme.name}</span>
                 <button 
-                  onClick={resetThemeOverrides}
+                  onClick={() => {
+                      resetThemeOverrides();
+                      setPreviewOverrides({});
+                  }}
                   className="flex items-center gap-1 hover:text-red-400 transition-colors"
                   title="Reset all color overrides"
                 >
@@ -63,6 +139,23 @@ export const ThemeSelector: React.FC = () => {
             </div>
             <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
                 {colorFields.map(renderColorPicker)}
+            </div>
+            
+            <div className="flex gap-2 pt-2 border-t border-neutral-800">
+                <button 
+                    onClick={handleCancel}
+                    className="flex-1 flex items-center justify-center gap-2 py-1.5 rounded bg-neutral-800 hover:bg-neutral-700 text-xs font-medium text-neutral-300 transition-colors"
+                >
+                    <X size={14} />
+                    Cancel
+                </button>
+                <button 
+                    onClick={handleSave}
+                    className="flex-1 flex items-center justify-center gap-2 py-1.5 rounded bg-violet-600 hover:bg-violet-500 text-xs font-medium text-white shadow-sm transition-colors"
+                >
+                    <Save size={14} />
+                    Save
+                </button>
             </div>
         </div>
       ) : (

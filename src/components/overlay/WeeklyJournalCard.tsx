@@ -145,16 +145,15 @@ export const WeeklyJournalCard: React.FC<WeeklyJournalCardProps> = ({
       </motion.div>
 
       <div className="flex-1 flex flex-col p-3 gap-2 overflow-y-auto no-scrollbar">
-        <AnimatePresence mode="wait">
-          {data.map((item, idx) => (
-            <motion.div 
-              key={`${idx}-${item.day}`}
-              variants={itemVariants}
-              className="flex justify-between items-center px-4 py-2.5 rounded-md relative group overflow-hidden transition-colors duration-200"
-              style={{ 
-                backgroundColor: `${theme.colors.border}40`, // 25% opacity
-              }}
-            >
+        {data.map((item, idx) => (
+          <motion.div 
+            key={`${idx}-${item.day}`}
+            variants={itemVariants}
+            className="flex justify-between items-center px-4 py-2.5 rounded-md relative group overflow-hidden transition-colors duration-200"
+            style={{ 
+              backgroundColor: `${theme.colors.border}40`, // 25% opacity
+            }}
+          >
               {/* Hover/Active indicator line */}
               <div className="absolute left-0 top-0 bottom-0 w-1" style={{ backgroundColor: theme.colors.accent }} />
               
@@ -182,11 +181,10 @@ export const WeeklyJournalCard: React.FC<WeeklyJournalCardProps> = ({
                 >
                   {formatCurrency(item.profit)}
                 </span>
-                <span className="text-[10px] font-bold opacity-60 uppercase tracking-wider" style={{ color: theme.colors.text }}>PIPS</span>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+              <span className="text-[10px] font-bold opacity-60 uppercase tracking-wider" style={{ color: theme.colors.text }}>PIPS</span>
+            </div>
+          </motion.div>
+        ))}
 
         {showTotal && (
            <motion.div 

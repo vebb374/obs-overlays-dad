@@ -44,11 +44,12 @@ export const createOverlayComponent = (
     return {
       ...baseComponent,
       type: 'marquee',
+      duration: undefined, // Allow speed to control velocity
       onscreenDuration: 20000, // Default 20s onscreen
-      offscreenDuration: 5000, // Default 5s offscreen
+      offscreenDuration: 0, // Default 0s offscreen (always visible)
       props: {
         text: 'New Marquee Text',
-        speed: 50,
+        speed: 200,
         separator: ' • ',
         fontFamily: 'inherit'
       }
@@ -58,7 +59,7 @@ export const createOverlayComponent = (
       ...baseComponent,
       type: 'journal',
       onscreenDuration: 10000, // Default 10s onscreen
-      offscreenDuration: 5000, // Default 5s offscreen
+      offscreenDuration: 0, // Default 0s offscreen (always visible)
       props: {
         heading: 'Weekly Journal',
         subHeading: 'Week ' + (existingCount + 1),
@@ -95,13 +96,12 @@ export const INITIAL_COMPONENTS: OverlayComponent[] = [
     width: 1920,
     height: 60,
     zIndex: 1,
-    duration: 20000,
     loop: true,
     onscreenDuration: 20000,
-    offscreenDuration: 5000,
+    offscreenDuration: 0,
     props: { 
       text: 'DISCLAIMER: Not financial advice. For educational purposes only.', 
-      speed: 50, 
+      speed: 200, 
       separator: ' • ',
       fontFamily: 'inherit'
     }
@@ -118,7 +118,7 @@ export const INITIAL_COMPONENTS: OverlayComponent[] = [
     duration: 5000,
     loop: true,
     onscreenDuration: 10000,
-    offscreenDuration: 5000,
+    offscreenDuration: 0,
     props: { 
       heading: 'Weekly Journal',
       subHeading: 'Current Week',
