@@ -1,7 +1,14 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Outlet, Link } from 'react-router-dom';
-import { Plus, Download, Upload, ChevronDown, Image, Type, List } from 'lucide-react';
-import { useOverlayStore } from '../state/useOverlayStore';
+import { 
+  Plus, 
+  Download, 
+  Upload, 
+  ChevronDown, 
+  Image, 
+  Type, 
+  List,
+} from 'lucide-react';
 import { useComponentSelectors } from '../state/selectors';
 import { exportConfig, importConfig } from '../utils/storage';
 

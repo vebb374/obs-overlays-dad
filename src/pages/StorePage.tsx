@@ -2,6 +2,7 @@ import React from 'react';
 import { useOverlayStore } from '../state/useOverlayStore';
 import { Trash2, Copy } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import type { OverlayComponent } from '../types/overlay';
 
 export const StorePage: React.FC = () => {
   const { 
@@ -20,7 +21,7 @@ export const StorePage: React.FC = () => {
         props: JSON.parse(JSON.stringify(comp.props)) as typeof comp.props,
         width: comp.width,
         height: comp.height
-      });
+      } as Partial<OverlayComponent>);
     }
   };
 

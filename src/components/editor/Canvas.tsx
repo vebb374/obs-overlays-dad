@@ -1,6 +1,4 @@
 import React, { useRef, useCallback, useState, Suspense } from 'react';
-import { useShallow } from 'zustand/react/shallow';
-import { useOverlayStore } from '../../state/useOverlayStore';
 import { CanvasItem } from './CanvasItem';
 import { useSearchParams } from 'react-router-dom';
 import { ZoomIn, ZoomOut, Maximize, Settings } from 'lucide-react';
@@ -9,7 +7,7 @@ import { useCanvasSelectors, useComponentSelectors, useThemeSelectors } from '..
 
 export const Canvas: React.FC = () => {
   const { width: canvasWidth, height: canvasHeight } = useCanvasSelectors();
-  const { activeThemeId, getActiveTheme } = useThemeSelectors();
+  const { getActiveTheme } = useThemeSelectors();
   const { 
     components, 
     updateComponent, 
@@ -25,7 +23,6 @@ export const Canvas: React.FC = () => {
   
   const { 
     scale, 
-    autoFit, 
     setAutoFit, 
     zoomIn, 
     zoomOut, 

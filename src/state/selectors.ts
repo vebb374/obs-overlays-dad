@@ -17,6 +17,8 @@ export const useThemeSelectors = () => {
       activeThemeId: state.activeThemeId,
       setTheme: state.setTheme,
       getActiveTheme: state.getActiveTheme,
+      setThemeOverride: state.setThemeOverride,
+      resetThemeOverrides: state.resetThemeOverrides,
     }))
   );
 };
@@ -41,5 +43,3 @@ export const useSelectedComponent = () => {
     return state.components.find((c) => c.id === state.selectedComponentId) ?? null;
   });
 };
-
-

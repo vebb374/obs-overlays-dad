@@ -1,15 +1,72 @@
-import { useOverlayStore } from '../state/useOverlayStore';
+import { useOverlayStore, type OverlayState } from '../state/useOverlayStore';
+import type { OverlayComponent } from '../types/overlay';
+import type { Theme } from '../types/theme';
+
+const SCENE_VERSION = 1;
+
+export interface SceneConfig {
+  version: number;
+  updatedAt?: number;
+  components: OverlayComponent[];
+  activeThemeId: string;
+  themeOverrides?: Partial<Theme['colors']>;
+  canvasWidth: number;
+  canvasHeight: number;
+}
+
+export const createSceneSnapshot = (state?: OverlayState): SceneConfig => {
+  const snapshot = state ?? useOverlayStore.getState();
+  return {
+    version: SCENE_VERSION,
+    updatedAt: Date.now(),
+    components: snapshot.components,
+    activeThemeId: snapshot.activeThemeId,
+    themeOverrides: snapshot.themeOverrides,
+    canvasWidth: snapshot.canvasWidth,
+    canvasHeight: snapshot.canvasHeight,
+  };
+};
+
+export const applySceneConfig = (config: SceneConfig) => {
+  useOverlayStore.setState({
+    components: Array.isArray(config.components) ? config.components : [],
+    activeThemeId: config.activeThemeId ?? 'dark-modern',
+    themeOverrides: config.themeOverrides ?? {},
+    canvasWidth: config.canvasWidth ?? 1920,
+    canvasHeight: config.canvasHeight ?? 1080,
+  });
+};
+
+const normalizeConfig = (value: unknown): SceneConfig => {
+  if (!value || typeof value !== 'object') {
+    throw new Error('Invalid scene file');
+  }
+
+  const candidate = value as Partial<SceneConfig>;
+  if (candidate.version !== SCENE_VERSION) {
+    throw new Error(`Unsupported scene version: ${candidate.version}`);
+  }
+
+  if (!Array.isArray(candidate.components)) {
+    throw new Error('Scene file is missing components');
+  }
+
+  return {
+    version: SCENE_VERSION,
+    updatedAt: typeof candidate.updatedAt === 'number' ? candidate.updatedAt : undefined,
+    components: candidate.components,
+    activeThemeId:
+      typeof candidate.activeThemeId === 'string' && candidate.activeThemeId.length > 0
+        ? candidate.activeThemeId
+        : 'dark-modern',
+    themeOverrides: typeof candidate.themeOverrides === 'object' ? candidate.themeOverrides : {},
+    canvasWidth: typeof candidate.canvasWidth === 'number' ? candidate.canvasWidth : 1920,
+    canvasHeight: typeof candidate.canvasHeight === 'number' ? candidate.canvasHeight : 1080,
+  };
+};
 
 export const exportConfig = () => {
-  const state = useOverlayStore.getState();
-  const config = {
-    components: state.components,
-    activeThemeId: state.activeThemeId,
-    canvasWidth: state.canvasWidth,
-    canvasHeight: state.canvasHeight,
-    version: 1,
-  };
-  
+  const config = createSceneSnapshot();
   const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -19,36 +76,25 @@ export const exportConfig = () => {
   URL.revokeObjectURL(url);
 };
 
-interface ImportedConfig {
-  version: number;
-  components: unknown;
-  activeThemeId: unknown;
-  canvasWidth?: number;
-  canvasHeight?: number;
-}
-
-export const importConfig = (file: File) => {
-  return new Promise<void>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const config = JSON.parse(e.target?.result as string) as ImportedConfig;
-        if (config.version === 1) {
-          useOverlayStore.setState({
-             components: config.components,
-             activeThemeId: config.activeThemeId,
-             canvasWidth: config.canvasWidth ?? 1920,
-             canvasHeight: config.canvasHeight ?? 1080,
-          });
-          resolve();
-        } else {
-          reject(new Error('Unknown config version'));
-        }
-      } catch (err) {
-        reject(err instanceof Error ? err : new Error(String(err)));
-      }
-    };
-    reader.readAsText(file);
-  });
+export const importConfig = async (file: File) => {
+  const text = await file.text();
+  const parsed = normalizeConfig(JSON.parse(text));
+  applySceneConfig(parsed);
 };
 
+export const importConfigFromText = (text: string) => {
+  const parsed = normalizeConfig(JSON.parse(text));
+  applySceneConfig(parsed);
+  return parsed;
+};
+
+export const loadSceneFromUrl = async (sceneUrl: string, init?: RequestInit) => {
+  const response = await fetch(sceneUrl, { cache: 'no-store', ...init });
+  if (!response.ok) {
+    throw new Error(`Unable to load scene file (${response.status})`);
+  }
+
+  const parsed = normalizeConfig(await response.json());
+  applySceneConfig(parsed);
+  return parsed;
+};

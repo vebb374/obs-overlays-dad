@@ -13,18 +13,19 @@ A powerful, user-friendly web application for creating, customizing, and managin
     *   **Media Support**: Drag and drop images or videos directly onto the canvas, or use URLs.
 *   **Customization**:
     *   **Theming**: Choose from built-in themes (Dark Modern, Neon Cyber, Clean Light) or customize colors.
+    *   **Theme Editor**: Fine-tune individual theme colors (text, accent, borders, etc.) directly in the inspector.
     *   **Typography**: Select fonts per component.
     *   **Layering**: Easily reorder elements (Bring to Front, Send Backward, etc.).
-*   **Persistence**: Your layout is automatically saved to your browser (IndexedDB). You can also **Export** and **Import** configurations as JSON files for backup or sharing.
+*   **System Persistence**: The app automatically syncs your scene to a local `scene.json` file when running the dev server. This allows you to open the editor in any browser (Chrome, Firefox, OBS) and see the same state instantly.
 *   **OBS Integration**: Generates a clean, transparent URL specifically for OBS Browser Sources.
 
 ## 🛠️ Tech Stack
 
 *   **React 19**: UI Library
-*   **Vite**: Build tool and dev server
+*   **Vite**: Build tool and dev server (with custom middleware for file persistence)
 *   **TypeScript**: Type safety
 *   **Tailwind CSS v4**: Styling
-*   **Zustand**: State management (with persistence)
+*   **Zustand**: State management
 *   **React RND**: Resizable and draggable components
 *   **Framer Motion**: Animations
 
@@ -45,7 +46,7 @@ A powerful, user-friendly web application for creating, customizing, and managin
     ```bash
     npm run dev
     ```
-    The app will be available at `http://localhost:5173`.
+    The app will be available at `http://localhost:5173`. A `scene.json` file will be created in the project root to store your layout.
 
 ## 🖥️ Usage Guide
 
@@ -54,23 +55,22 @@ A powerful, user-friendly web application for creating, customizing, and managin
 2.  Use the **Add Widget** dropdown in the top bar to add components (Marquee, Journal, Media).
 3.  **Drag** components to position them.
 4.  **Resize** components by dragging their corners or edges.
-5.  **Select** a component to edit its properties in the right-hand Inspector panel:
-    *   Change text, colors, fonts, and speed.
-    *   Upload media or paste URLs.
-    *   Adjust layer order (z-index).
+5.  **Select** a component to edit its properties in the right-hand Inspector panel.
+6.  **Customize Theme**: Click "Edit Colors" in the Theme panel to tweak specific colors for the active theme.
 
 ### 2. Using with OBS
-1.  Once your overlay is ready, click the **Open Preview** button in the Inspector.
-2.  Copy the URL of the opened tab (e.g., `http://localhost:5173/preview`).
+1.  Once your overlay is ready, click the **Open Preview** button (or copy the URL).
+2.  The URL will be `http://localhost:5173/preview`.
 3.  Open **OBS Studio**.
 4.  Add a new **Browser Source** to your scene.
-5.  Paste the copied URL into the URL field.
+5.  Paste the URL into the URL field.
 6.  Set **Width** to `1920` and **Height** to `1080`.
 7.  The overlay will appear transparently over your stream content.
+8.  **Persistence**: Since the app now syncs to `scene.json` via the dev server, **OBS will automatically load the latest scene** without needing shared browser storage. Just make sure `npm run dev` is running.
 
 ## 📜 Available Scripts
 
-*   `npm run dev`: Starts the development server.
+*   `npm run dev`: Starts the development server with persistence middleware.
 *   `npm run build`: Compiles the application for production.
 *   `npm run preview`: Locally preview the production build.
 *   `npm run lint`: Runs ESLint to check for code quality issues.
@@ -79,10 +79,10 @@ A powerful, user-friendly web application for creating, customizing, and managin
 ## 🏗️ Architecture
 
 ### State Management
-We use **Zustand** for state management. The store is split into slices (Canvas, Components, Theme) to maintain maintainability. State is persisted to IndexedDB using `idb-keyval` to handle large payloads (like images).
+We use **Zustand** for state management. The store is split into slices (Canvas, Components, Theme) to maintain maintainability. State is persisted to a local `scene.json` file via a custom Zustand storage adapter that communicates with a Vite middleware endpoint (`/api/scene`).
 
 ### Theme System
-Themes are pluggable definitions located in `src/themes`. A theme defines a color palette, font family, and optional wrapper components or animation overrides. See `src/themes/README.md` for details on creating new themes.
+Themes are pluggable definitions located in `src/themes`. A theme defines a color palette, font family, and optional wrapper components or animation overrides. The store now supports runtime overrides for theme colors.
 
 ### Component Factory
 New overlay components are created via a Factory pattern (`src/state/factories`) to ensure consistent initialization of props and IDs.

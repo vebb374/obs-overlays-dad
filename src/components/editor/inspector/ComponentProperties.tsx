@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Trash2, MoveUp, MoveDown, ArrowUpToLine, ArrowDownToLine, Upload } from 'lucide-react';
 import { useComponentSelectors, useSelectedComponent } from '../../../state/selectors';
 import type { OverlayComponent } from '../../../types/overlay';
@@ -7,6 +7,32 @@ export const ComponentProperties: React.FC = () => {
   const selectedComponent = useSelectedComponent();
   const { updateComponent, removeComponent, reorderComponent } = useComponentSelectors();
   const mediaInputRef = useRef<HTMLInputElement>(null);
+  const [journalInputs, setJournalInputs] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let frame: number | undefined;
+    if (selectedComponent?.type !== 'journal') {
+      frame = requestAnimationFrame(() => setJournalInputs({}));
+      return () => {
+        if (frame) cancelAnimationFrame(frame);
+      };
+    }
+
+    frame = requestAnimationFrame(() => {
+      setJournalInputs((prev) => {
+        const next: Record<string, string> = {};
+        selectedComponent.props.data.forEach((row, idx) => {
+          const key = `${selectedComponent.id}-${idx}`;
+          next[key] = key in prev ? prev[key] : (row.profit?.toString() ?? '0');
+        });
+        return next;
+      });
+    });
+
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, [selectedComponent]);
 
   // Global Delete key handler - duplicated logic? 
   // It's better to keep this in the parent or a hook, but if this component unmounts when nothing selected, it's tricky.
@@ -49,14 +75,55 @@ export const ComponentProperties: React.FC = () => {
     updateComponent(selectedComponent.id, { [key]: seconds * 1000 });
   };
 
+  const getJournalKey = (index: number) => `${selectedComponent.id}-${index}`;
+
   const handleJournalDataChange = (index: number, field: 'day' | 'profit', value: string) => {
     if (selectedComponent.type !== 'journal') return;
     const currentData = [...selectedComponent.props.data];
     if (field === 'profit') {
-        currentData[index] = { ...currentData[index], profit: value === '' ? 0 : Number(value) }; 
+        const key = getJournalKey(index);
+        setJournalInputs((prev) => ({ ...prev, [key]: value }));
+        if (value === '' || value === '-' || value === '+') {
+          return;
+        }
+        const parsed = Number(value);
+        if (!Number.isNaN(parsed)) {
+          currentData[index] = { ...currentData[index], profit: parsed };
+          handlePropChange('data', currentData);
+        }
+        return;
     } else {
         currentData[index] = { ...currentData[index], day: value };
     }
+    handlePropChange('data', currentData);
+  };
+
+  const handleProfitBlur = (index: number) => {
+    if (selectedComponent?.type !== 'journal') return;
+    const key = getJournalKey(index);
+    const raw = journalInputs[key];
+    const fallback = selectedComponent.props.data[index]?.profit ?? 0;
+
+    if (raw === undefined) return;
+
+    if (raw === '' || raw === '-' || raw === '+') {
+      const currentData = [...selectedComponent.props.data];
+      currentData[index] = { ...currentData[index], profit: 0 };
+      handlePropChange('data', currentData);
+      setJournalInputs((prev) => ({ ...prev, [key]: '0' }));
+      return;
+    }
+
+    const parsed = Number(raw);
+    if (Number.isNaN(parsed)) {
+      setJournalInputs((prev) => ({ ...prev, [key]: fallback.toString() }));
+      return;
+    }
+
+    const normalized = parsed.toString();
+    setJournalInputs((prev) => ({ ...prev, [key]: normalized }));
+    const currentData = [...selectedComponent.props.data];
+    currentData[index] = { ...currentData[index], profit: parsed };
     handlePropChange('data', currentData);
   };
 
@@ -274,10 +341,12 @@ export const ComponentProperties: React.FC = () => {
                       onChange={(e) => handleJournalDataChange(idx, 'day', e.target.value)}
                    />
                    <input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       className="flex-1 bg-neutral-800 border border-neutral-700 rounded px-2 py-1 text-sm"
-                      value={row.profit}
+                      value={journalInputs[getJournalKey(idx)] ?? row.profit?.toString() ?? '0'}
                       onChange={(e) => handleJournalDataChange(idx, 'profit', e.target.value)}
+                      onBlur={() => handleProfitBlur(idx)}
                    />
                  </div>
                ))}
