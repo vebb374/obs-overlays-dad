@@ -345,8 +345,8 @@ export const Inspector: React.FC = () => {
               onChange={(e) => {
                  const newSpeed = Number(e.target.value);
                  handlePropChange('speed', newSpeed);
-                 // Sync duration
-                 updateComponent(selectedComponent.id, { duration: Math.round(1000000 / newSpeed) });
+                 // Clear legacy duration so the component calculates it based on width
+                 updateComponent(selectedComponent.id, { duration: undefined });
               }}
               className="w-full"
             />

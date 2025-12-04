@@ -3,7 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useOverlayStore } from '../../state/useOverlayStore';
 import { CanvasItem } from './CanvasItem';
 import { useSearchParams } from 'react-router-dom';
-import { ZoomIn, ZoomOut, Maximize } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize, Settings } from 'lucide-react';
 
 export const Canvas: React.FC = () => {
   const { 
@@ -105,6 +105,22 @@ export const Canvas: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-neutral-950 relative overflow-hidden">
+        {/* Canvas Properties Button */}
+        <div className="absolute top-4 right-4 z-50">
+            <button
+              onClick={() => selectComponent(null)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all ${
+                selectedComponentId === null
+                  ? 'bg-violet-900/30 border-violet-500 text-violet-200 shadow-[0_0_10px_rgba(139,92,246,0.2)]'
+                  : 'bg-neutral-800/90 border-neutral-700 text-neutral-300 hover:border-neutral-600 hover:bg-neutral-700/90'
+              } backdrop-blur`}
+              title="Canvas Properties (Theme, Size, etc.)"
+            >
+              <Settings size={16} />
+              <span className="text-sm font-medium">Canvas</span>
+            </button>
+        </div>
+
         <div 
           ref={containerRef}
           className="flex-1 relative overflow-hidden flex items-center justify-center"
@@ -138,18 +154,35 @@ export const Canvas: React.FC = () => {
               }
             }}
           >
-            {components.map((comp) => (
-              <CanvasItem
-                key={comp.id}
-                component={comp}
-                scale={scale}
-                isSelected={selectedComponentId === comp.id}
-                theme={theme}
-                onUpdate={updateComponent}
-                onSelect={selectComponent}
-                onFocusCanvas={handleFocusCanvas}
-              />
-            ))}
+            {theme.wrapperComponent ? (
+              <theme.wrapperComponent>
+                {components.map((comp) => (
+                  <CanvasItem
+                    key={comp.id}
+                    component={comp}
+                    scale={scale}
+                    isSelected={selectedComponentId === comp.id}
+                    theme={theme}
+                    onUpdate={updateComponent}
+                    onSelect={selectComponent}
+                    onFocusCanvas={handleFocusCanvas}
+                  />
+                ))}
+              </theme.wrapperComponent>
+            ) : (
+              components.map((comp) => (
+                <CanvasItem
+                  key={comp.id}
+                  component={comp}
+                  scale={scale}
+                  isSelected={selectedComponentId === comp.id}
+                  theme={theme}
+                  onUpdate={updateComponent}
+                  onSelect={selectComponent}
+                  onFocusCanvas={handleFocusCanvas}
+                />
+              ))
+            )}
           </div>
         </div>
         

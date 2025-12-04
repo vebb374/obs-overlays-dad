@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Theme } from '../../state/useOverlayStore';
 
 interface MarqueeTickerProps {
   text: string;
-  speed?: number; // arbitrary speed unit
+  speed?: number; // arbitrary speed unit (pixels per second)
   separator?: string;
   fontFamily?: string;
   theme: Theme;
@@ -30,12 +30,34 @@ export const MarqueeTicker: React.FC<MarqueeTickerProps> = ({
 }) => {
   const content = `${text}${separator}`;
   
+  const [contentWidth, setContentWidth] = useState(0);
+  const itemRef = useRef<HTMLSpanElement>(null);
+
+  useLayoutEffect(() => {
+    if (itemRef.current) {
+      const style = window.getComputedStyle(itemRef.current);
+      const margin = parseFloat(style.marginLeft) + parseFloat(style.marginRight);
+      setContentWidth(itemRef.current.offsetWidth + margin);
+    }
+  }, [text, separator, fontFamily, theme.fontFamily]);
+
   // Determine scroll duration (speed)
   // onscreenDuration should NOT dictate the speed, only how long it stays visible.
   // Speed is determined by 'speed' prop or legacyDuration.
-  const scrollDurationSeconds = legacyDuration 
-        ? legacyDuration / 1000 
-    : 1000 / Math.max(speed, 1);
+  const scrollDurationSeconds = useMemo(() => {
+    if (legacyDuration) return legacyDuration / 1000;
+
+    if (contentWidth > 0) {
+      // We scroll 50% of the container.
+      // The container has 20 copies. 50% is 10 copies.
+      // Distance = 10 * singleItemWidth
+      const distance = contentWidth * 10;
+      // speed is treated as pixels per second
+      return distance / Math.max(speed, 1);
+    }
+
+    return 1000 / Math.max(speed, 1);
+  }, [legacyDuration, speed, contentWidth]);
 
   // Lifecycle State
   const [isVisible, setIsVisible] = useState(true);
@@ -110,7 +132,11 @@ export const MarqueeTicker: React.FC<MarqueeTickerProps> = ({
         >
           {/* Render enough copies to cover wide screens and allow smooth looping */}
           {Array.from({ length: 20 }).map((_, i) => (
-            <span key={i} className="mx-4 font-medium tracking-wide flex items-center">
+            <span 
+              key={i} 
+              ref={i === 0 ? itemRef : null}
+              className="mx-4 font-medium tracking-wide flex items-center"
+            >
               {content}
             </span>
           ))}

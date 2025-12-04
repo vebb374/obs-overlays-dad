@@ -43,21 +43,41 @@ export const PreviewPage: React.FC = () => {
           overflow: 'hidden'
         }}
       >
-        {components.map(comp => (
-          <div 
-            key={comp.id} 
-            style={{ 
-              position: 'absolute', 
-              left: comp.x, 
-              top: comp.y,
-              width: comp.width,
-              height: comp.height,
-              zIndex: comp.zIndex
-            }}
-          >
-            <OverlayComponentRenderer component={comp} theme={theme} />
-          </div>
-        ))}
+        {theme.wrapperComponent ? (
+          <theme.wrapperComponent>
+            {components.map(comp => (
+              <div 
+                key={comp.id} 
+                style={{ 
+                  position: 'absolute', 
+                  left: comp.x, 
+                  top: comp.y,
+                  width: comp.width,
+                  height: comp.height,
+                  zIndex: comp.zIndex
+                }}
+              >
+                <OverlayComponentRenderer component={comp} theme={theme} />
+              </div>
+            ))}
+          </theme.wrapperComponent>
+        ) : (
+          components.map(comp => (
+            <div 
+              key={comp.id} 
+              style={{ 
+                position: 'absolute', 
+                left: comp.x, 
+                top: comp.y,
+                width: comp.width,
+                height: comp.height,
+                zIndex: comp.zIndex
+              }}
+            >
+              <OverlayComponentRenderer component={comp} theme={theme} />
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import type { Variants } from "framer-motion";
+import type { ComponentType as ReactComponentType, ReactNode } from "react";
 
 export type ComponentType = 'marquee' | 'journal' | 'media';
 
@@ -64,5 +65,7 @@ export interface Theme {
     marquee?: AnimationPreset;
     media?: AnimationPreset;
   };
-}
 
+  // Component overrides
+  wrapperComponent?: ReactComponentType<{ children: ReactNode }>;
+}

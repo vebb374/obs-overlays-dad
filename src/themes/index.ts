@@ -9,6 +9,7 @@ import { royalGold } from './royalGold';
 import { slateMinimalist } from './slateMinimalist';
 import { retroWave } from './retroWave';
 import { broadcastSports } from './broadcastSports';
+import { goldCoins } from './goldCoins';
 
 // Registry
 export const THEMES: Record<string, Theme> = {
@@ -22,6 +23,7 @@ export const THEMES: Record<string, Theme> = {
   [slateMinimalist.id]: slateMinimalist,
   [retroWave.id]: retroWave,
   [broadcastSports.id]: broadcastSports,
+  [goldCoins.id]: goldCoins,
 };
 
 export const registerTheme = (theme: Theme) => {

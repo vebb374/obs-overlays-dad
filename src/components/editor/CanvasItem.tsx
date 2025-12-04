@@ -48,7 +48,7 @@ export const CanvasItem = memo(({
         onFocusCanvas();
       }}
       bounds="parent"
-      className={isSelected ? "ring-2 ring-violet-500" : "hover:ring-1 hover:ring-violet-500/50"}
+      className={`${isSelected ? "ring-2 ring-violet-500" : "hover:ring-1 hover:ring-violet-500/50"} pointer-events-auto`}
       enableResizing={isSelected}
     >
       <div className="w-full h-full relative group">
